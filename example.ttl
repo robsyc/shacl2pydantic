@@ -1,0 +1,289 @@
+@prefix ex:   <http://example.org/ns#> .
+@prefix sh:   <http://www.w3.org/ns/shacl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+# ── Address (nested shape, referenced by PersonShape) ────────────────────────
+
+ex:AddressShape
+    a sh:NodeShape ;
+    rdfs:label "Address" ;
+    rdfs:comment "A postal address." ;
+    sh:property [
+        sh:path ex:street ;
+        sh:name "street" ;
+        sh:description "Street address line" ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:maxLength 200 ;
+    ] ;
+    sh:property [
+        sh:path ex:city ;
+        sh:name "city" ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:postalCode ;
+        sh:name "postal code" ;
+        sh:description "ZIP or postal code" ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:pattern "^[0-9]{5}(-[0-9]{4})?$" ;
+    ] ;
+    sh:property [
+        sh:path ex:country ;
+        sh:name "country" ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:defaultValue "US" ;
+    ] .
+
+# ── Person (exercises most constraint types) ─────────────────────────────────
+
+ex:PersonShape
+    a sh:NodeShape ;
+    rdfs:label "Person" ;
+    rdfs:comment "A person with various constrained properties." ;
+
+    # Required string with length constraints
+    sh:property [
+        sh:path ex:firstName ;
+        sh:name "first name" ;
+        sh:description "Given name" ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:minLength 1 ;
+        sh:maxLength 100 ;
+    ] ;
+
+    # Required string (no extra constraints)
+    sh:property [
+        sh:path ex:lastName ;
+        sh:name "last name" ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+
+    # Optional string with pattern
+    sh:property [
+        sh:path ex:email ;
+        sh:name "email" ;
+        sh:description "Email address" ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:pattern "^[^@]+@[^@]+\\.[^@]+$" ;
+    ] ;
+
+    # Optional integer with inclusive range
+    sh:property [
+        sh:path ex:age ;
+        sh:name "age" ;
+        sh:description "Age in years" ;
+        sh:datatype xsd:integer ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0 ;
+        sh:maxInclusive 150 ;
+    ] ;
+
+    # Optional float with exclusive range
+    sh:property [
+        sh:path ex:height ;
+        sh:name "height" ;
+        sh:description "Height in meters" ;
+        sh:datatype xsd:float ;
+        sh:maxCount 1 ;
+        sh:minExclusive 0.0 ;
+        sh:maxExclusive 3.0 ;
+    ] ;
+
+    # Optional decimal with lower bound
+    sh:property [
+        sh:path ex:salary ;
+        sh:name "salary" ;
+        sh:datatype xsd:decimal ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0 ;
+    ] ;
+
+    # Optional boolean with default
+    sh:property [
+        sh:path ex:active ;
+        sh:name "active" ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+        sh:defaultValue true ;
+    ] ;
+
+    # Optional date
+    sh:property [
+        sh:path ex:birthDate ;
+        sh:name "birth date" ;
+        sh:datatype xsd:date ;
+        sh:maxCount 1 ;
+    ] ;
+
+    # Enum (sh:in) — optional scalar
+    sh:property [
+        sh:path ex:status ;
+        sh:name "status" ;
+        sh:description "Employment status" ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "active" "inactive" "pending" ) ;
+    ] ;
+
+    # Enum (sh:in) — required scalar
+    sh:property [
+        sh:path ex:role ;
+        sh:name "role" ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "admin" "editor" "viewer" ) ;
+    ] ;
+
+    # Nested shape (sh:node) — optional
+    sh:property [
+        sh:path ex:address ;
+        sh:name "address" ;
+        sh:description "Primary address" ;
+        sh:node ex:AddressShape ;
+        sh:maxCount 1 ;
+    ] ;
+
+    # Optional list (no minCount, no maxCount → list[str] = [])
+    sh:property [
+        sh:path ex:tags ;
+        sh:name "tags" ;
+        sh:description "Freeform tags" ;
+        sh:datatype xsd:string ;
+    ] ;
+
+    # Required list (minCount >= 1, no maxCount)
+    sh:property [
+        sh:path ex:scores ;
+        sh:name "scores" ;
+        sh:description "Test scores" ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+    ] ;
+
+    # Union type (sh:or)
+    sh:property [
+        sh:path ex:contactInfo ;
+        sh:name "contact info" ;
+        sh:description "String or integer contact" ;
+        sh:or (
+            [ sh:datatype xsd:string ]
+            [ sh:datatype xsd:integer ]
+        ) ;
+        sh:maxCount 1 ;
+    ] .
+
+# ── TreeNode (circular self-reference → forward ref + model_rebuild) ─────────
+
+ex:TreeNodeShape
+    a sh:NodeShape ;
+    rdfs:comment "A tree node with recursive children." ;
+    sh:property [
+        sh:path ex:value ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:parent ;
+        sh:node ex:TreeNodeShape ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:children ;
+        sh:node ex:TreeNodeShape ;
+    ] .
+
+# ── Named property shape (non-blank-node, referenced by URI) ─────────────────
+
+ex:CompanyNameProperty
+    a sh:PropertyShape ;
+    sh:path ex:companyName ;
+    sh:codeIdentifier "name" ;
+    sh:datatype xsd:string ;
+    sh:minCount 1 ;
+    sh:maxCount 1 .
+
+# ── Company (implicit shape — no rdf:type sh:NodeShape) ─────────────────────
+
+ex:CompanyShape
+    sh:property ex:CompanyNameProperty ;
+    sh:property [
+        sh:path ex:founded ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] .
+
+# ── Integer enum (sh:in with non-string typed values) ────────────────────────
+
+ex:PriorityShape
+    a sh:NodeShape ;
+    rdfs:label "Priority" ;
+    rdfs:comment "Priority level using integer enum values." ;
+    sh:property [
+        sh:path ex:level ;
+        sh:name "level" ;
+        sh:description "Priority level (1=low, 2=medium, 3=high)" ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( 1 2 3 ) ;
+    ] .
+
+# ── sh:or with mixed node shape + datatype ───────────────────────────────────
+
+ex:PayloadShape
+    a sh:NodeShape ;
+    rdfs:label "Payload" ;
+    sh:property [
+        sh:path ex:content ;
+        sh:name "content" ;
+        sh:description "Nested address or plain string" ;
+        sh:or (
+            [ sh:node ex:AddressShape ]
+            [ sh:datatype xsd:string ]
+        ) ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
+# ── Empty marker shape (no properties → class body is docstring only) ────────
+
+ex:MarkerShape
+    a sh:NodeShape ;
+    rdfs:comment "Marker shape with no properties." .
+
+# ── sh:codeIdentifier on NodeShape (overrides URI / label for class name) ────
+
+ex:InternalWidgetShape
+    a sh:NodeShape ;
+    rdfs:label "Some verbose label" ;
+    sh:codeIdentifier "Widget" ;
+    sh:property [
+        sh:path ex:widgetId ;
+        sh:name "widget id" ;
+        sh:datatype xsd:integer ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path ex:timestamp ;
+        sh:name "timestamp" ;
+        sh:datatype xsd:time ;
+        sh:maxCount 1 ;
+    ] .

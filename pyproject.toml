@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "shacl2pydantic"
+version = "0.1.0"
+description = "Convert SHACL 1.2 shape definitions to Pydantic v2 model classes"
+requires-python = ">=3.10"
+dependencies = [
+    "click>=8.1",
+    "rdflib>=7.6,<8",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+    "mypy>=1.14",
+]
+
+[project.scripts]
+shacl2pydantic = "shacl2pydantic.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "W"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
